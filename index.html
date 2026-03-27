@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Masjid Khairul Anaam</title>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#1a4a2e" />
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -42,7 +44,6 @@ body { font-family: 'Nunito', sans-serif; background: var(--green-light); color:
 .fund-card.out-accent { border-top-color: var(--danger); }
 .fund-card.bal-accent { border-top-color: #2980b9; }
 .fund-card.gold-accent { border-top-color: var(--gold); }
-.fund-card.gold-out { border-top-color: #e09b20; }
 .fund-card.gold-bal { border-top-color: #7a5c10; }
 .fund-card.blue-accent { border-top-color: #2471a3; }
 .fund-card.blue-out { border-top-color: #1a5276; }
@@ -105,7 +106,12 @@ tbody tr:last-child { border-bottom: none; }
 .table-wrap { overflow-x: auto; }
 .hidden { display: none; }
 .bismi { text-align: center; font-family: 'Amiri', serif; font-size: 22px; color: var(--green-mid); padding: 10px 0 0; letter-spacing: 1px; }
-/* Settings */
+.sync-bar { background: #f0f7f3; border-bottom: 1px solid var(--border); padding: 6px 28px; font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #a8d5b8; display: inline-block; }
+.sync-dot.synced { background: var(--green-mid); }
+.sync-dot.syncing { background: var(--gold); animation: pulse 1s infinite; }
+.sync-dot.error { background: var(--danger); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 .settings-section { margin-bottom: 24px; }
 .settings-section-title { font-size: 13px; font-weight: 700; color: var(--green-dark); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
 .cat-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #f7fbf9; border-radius: 8px; margin-bottom: 6px; border: 1px solid var(--border); }
@@ -126,10 +132,12 @@ tbody tr:last-child { border-bottom: none; }
   .fund-row { grid-template-columns: 1fr; }
   .nav-tab { padding: 10px 12px; font-size: 12px; }
   thead th, tbody td { padding: 8px 10px; }
+  .sync-bar { padding: 6px 16px; }
 }
 </style>
 </head>
 <body>
+
 <div class="app-header">
   <div class="title-block">
     <div class="mosque-icon">🕌</div>
@@ -139,9 +147,13 @@ tbody tr:last-child { border-bottom: none; }
     </div>
   </div>
   <div class="header-actions">
-    <button class="btn btn-outline" onclick="importExcel()">📥 Import</button>
-    <button class="btn btn-gold" onclick="exportExcel()">📤 Export</button>
+    <button class="btn btn-outline" onclick="exportExcel()">📤 Export</button>
   </div>
+</div>
+
+<div class="sync-bar">
+  <span class="sync-dot" id="sync-dot"></span>
+  <span id="sync-status">Loading data...</span>
 </div>
 
 <div class="nav-tabs">
@@ -173,12 +185,8 @@ tbody tr:last-child { border-bottom: none; }
       <div class="panel-header">
         <span class="panel-title">All Records</span>
         <div class="search-bar"><input type="text" id="search-input" placeholder="Search..." oninput="renderRecords()" /></div>
-        <select id="filter-cat" class="filter-select" onchange="renderRecords()">
-          <option value="">All categories</option>
-        </select>
-        <select id="filter-month" class="filter-select" onchange="renderRecords()">
-          <option value="">All months</option>
-        </select>
+        <select id="filter-cat" class="filter-select" onchange="renderRecords()"><option value="">All categories</option></select>
+        <select id="filter-month" class="filter-select" onchange="renderRecords()"><option value="">All months</option></select>
       </div>
       <div class="table-wrap" id="records-table-wrap"></div>
     </div>
@@ -190,23 +198,19 @@ tbody tr:last-child { border-bottom: none; }
       <div class="panel-header"><span class="panel-title">Add New Entry</span></div>
       <div class="form-panel">
         <div class="form-grid">
-
           <div class="form-group">
             <label>Category</label>
             <select id="f-category" onchange="updateSubcategory()"></select>
           </div>
-
           <div class="form-group" id="subcat-group">
             <label>Sub Category</label>
             <select id="f-subcat-select" onchange="updateOthersField(); updateNameVisibility();"></select>
             <input type="text" id="f-subcat-text" placeholder="e.g. Electricity, Repairs..." class="hidden" />
           </div>
-
           <div class="form-group full hidden" id="others-field-group">
             <label>Please specify</label>
             <input type="text" id="f-others-text" placeholder="Enter details..." />
           </div>
-
           <div class="form-group full hidden" id="exp-detail-group">
             <label>Expenditure Details</label>
             <div class="exp-detail">
@@ -218,22 +222,18 @@ tbody tr:last-child { border-bottom: none; }
               <input type="text" id="f-exp-desc" placeholder="Description e.g. Electricity bill" />
             </div>
           </div>
-
           <div class="form-group">
             <label>Date</label>
             <input type="date" id="f-date" />
           </div>
-
           <div class="form-group" id="name-group">
             <label>Name / Payer / Payee</label>
             <input type="text" id="f-name" placeholder="e.g. Ahmad Rashid" />
           </div>
-
           <div class="form-group">
             <label>Amount (₹)</label>
             <input type="number" id="f-amount" placeholder="0" min="0" />
           </div>
-
           <div class="form-group">
             <label>Payment Method</label>
             <select id="f-method" onchange="updateUploadVisibility()">
@@ -243,7 +243,6 @@ tbody tr:last-child { border-bottom: none; }
               <option value="Cheque">Cheque</option>
             </select>
           </div>
-
           <div class="form-group full hidden" id="upload-group">
             <label>Screenshot / Photo <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--text-muted)">(optional)</span></label>
             <div class="upload-zone">
@@ -255,26 +254,15 @@ tbody tr:last-child { border-bottom: none; }
               </div>
             </div>
           </div>
-
           <div class="form-group full">
             <label>Notes <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--text-muted)">(optional)</span></label>
             <textarea id="f-notes" rows="2" placeholder="Any additional notes..."></textarea>
           </div>
-
         </div>
         <div class="form-actions">
           <button class="btn btn-green" onclick="addEntry()">✔ Add Entry</button>
           <button class="btn btn-sm" onclick="clearForm()">Clear</button>
         </div>
-      </div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-header"><span class="panel-title">Import from Excel</span></div>
-      <div style="border:2px dashed var(--green-border);border-radius:12px;padding:28px;text-align:center;background:var(--green-light);cursor:pointer;margin:20px;" onclick="importExcel()">
-        <div style="font-size:34px;margin-bottom:8px;">📊</div>
-        <div style="font-size:14px;font-weight:700;color:var(--green-dark);">Click to import an Excel file</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:6px;line-height:1.8;">Columns: <strong>Date · Category · Sub Category · Others · Fund · Description · Name · Amount · Payment Method · Notes</strong></div>
       </div>
     </div>
   </div>
@@ -294,28 +282,100 @@ tbody tr:last-child { border-bottom: none; }
   <img id="lightbox-img" src="" alt="receipt" />
 </div>
 <div class="toast" id="toast"></div>
-<input type="file" id="file-input" accept=".xlsx,.xls" class="hidden" onchange="handleFileImport(event)" />
 
 <script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7i2jg7mWZCPwWE0tgUNROSOhv0mSihKkxjzemFoSxg8CZrH_B2mF43grpZLHnTG8zaA/exec';
+
 let records = [];
 let nextId = 1;
 let screenshotData = null;
-
-// Locked categories cannot be deleted; locked subcats cannot be deleted
-const LOCKED_CATS = ['Collection','Sadqa','Zakat','Expenditure','Taziyat Committee'];
+let isSaving = false;
 
 let categories = {
-  'Collection': { locked: true, subcats: ['Friday Collection','Monthly Collection','Earning','Others'] },
-  'Sadqa':      { locked: true, subcats: ['Sadqa Fitr','Baitul Maal','Others'] },
-  'Zakat':      { locked: true, subcats: ['Zakat','Others'] },
-  'Expenditure':{ locked: true, subcats: null },
-  'Taziyat Committee': { locked: true, subcats: ['Collection','Expenditure'] }
+  'Collection':        { locked: true,  subcats: ['Friday Collection','Monthly Collection','Earning','Others'] },
+  'Sadqa':             { locked: true,  subcats: ['Sadqa Fitr','Baitul Maal','Others'] },
+  'Zakat':             { locked: true,  subcats: ['Zakat','Others'] },
+  'Expenditure':       { locked: true,  subcats: null },
+  'Taziyat Committee': { locked: true,  subcats: ['Collection','Expenditure'] }
 };
 
+// ---- SYNC ----
+function setSyncStatus(state, msg) {
+  const dot = document.getElementById('sync-dot');
+  const txt = document.getElementById('sync-status');
+  dot.className = 'sync-dot ' + state;
+  txt.textContent = msg;
+}
+
+async function loadFromSheet() {
+  setSyncStatus('syncing', 'Loading data...');
+  try {
+    const res = await fetch(SCRIPT_URL);
+    const data = await res.json();
+    if (data.records && data.records.length > 1) {
+      const rows = data.records;
+      const header = rows[0];
+      records = [];
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r[0]) continue;
+        records.push({
+          id: i,
+          date: r[0] || '', category: r[1] || '', subcat: r[2] || '',
+          othersText: r[3] || '', fund: r[4] || '', description: r[5] || '',
+          name: r[6] || '', amount: parseFloat(r[7]) || 0,
+          method: r[8] || 'Cash', notes: r[9] || '', screenshot: r[10] || null
+        });
+      }
+      nextId = records.length + 1;
+      // load custom categories from sheet if saved
+      if (rows[0].length > 11 && rows[1] && rows[1][11]) {
+        try { categories = JSON.parse(rows[1][11]); } catch(e) {}
+      }
+    }
+    setSyncStatus('synced', 'All data synced · ' + new Date().toLocaleTimeString());
+    renderDashboard();
+    populateCategoryDropdown();
+  } catch(e) {
+    setSyncStatus('error', 'Could not load data — check connection');
+  }
+}
+
+async function saveToSheet() {
+  if (isSaving) return;
+  isSaving = true;
+  setSyncStatus('syncing', 'Saving...');
+  try {
+    const rows = [
+      ['Date','Category','Sub Category','Others','Fund','Description','Name','Amount','Payment Method','Notes','Screenshot','_categories']
+    ];
+    records.forEach((r, i) => {
+      rows.push([
+        r.date, r.category, r.subcat||'', r.othersText||'', r.fund||'',
+        r.description||'', r.name||'', r.amount, r.method, r.notes||'',
+        r.screenshot||'',
+        i === 0 ? JSON.stringify(categories) : ''
+      ]);
+    });
+    if (records.length === 0) {
+      rows.push(['','','','','','','','','','','', JSON.stringify(categories)]);
+    }
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'save', records: rows })
+    });
+    setSyncStatus('synced', 'Saved · ' + new Date().toLocaleTimeString());
+  } catch(e) {
+    setSyncStatus('error', 'Save failed — check connection');
+  }
+  isSaving = false;
+}
+
+// ---- HELPERS ----
 function fmt(n) { return '₹' + Number(n).toLocaleString('en-IN'); }
 function fmtDate(d) {
   if (!d) return '';
-  return new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
 }
 
 function switchTab(tab) {
@@ -329,45 +389,20 @@ function switchTab(tab) {
 }
 
 // ---- DASHBOARD ----
-function fundRow(inAmt, inCount, outAmt, outCount, bal, inLabel, outLabel, inCls, outCls, balCls, balColor, inColor) {
+function fundRow(inAmt, inCnt, outAmt, outCnt, bal, inLbl, outLbl, c1, c2, c3, balColor, inColor) {
   return `
-    <div class="fund-card ${inCls}">
-      <div class="fund-card-label">${inLabel}</div>
-      <div class="fund-card-amount" style="color:${inColor||'var(--text-dark)'}">${fmt(inAmt)}</div>
-      <div class="fund-card-count">${inCount} entries</div>
-    </div>
-    <div class="fund-card ${outCls}">
-      <div class="fund-card-label">${outLabel}</div>
-      <div class="fund-card-amount" style="color:var(--danger)">${fmt(outAmt)}</div>
-      <div class="fund-card-count">${outCount} entries</div>
-    </div>
-    <div class="fund-card ${balCls}">
-      <div class="fund-card-label">Balance</div>
-      <div class="fund-card-amount" style="color:${bal >= 0 ? balColor : 'var(--danger)'}">${fmt(bal)}</div>
-      <div class="fund-card-count">${inLabel} minus ${outLabel}</div>
-    </div>`;
+    <div class="fund-card ${c1}"><div class="fund-card-label">${inLbl}</div><div class="fund-card-amount" style="color:${inColor}">${fmt(inAmt)}</div><div class="fund-card-count">${inCnt} entries</div></div>
+    <div class="fund-card ${c2}"><div class="fund-card-label">${outLbl}</div><div class="fund-card-amount" style="color:var(--danger)">${fmt(outAmt)}</div><div class="fund-card-count">${outCnt} entries</div></div>
+    <div class="fund-card ${c3}"><div class="fund-card-label">Balance</div><div class="fund-card-amount" style="color:${bal>=0?balColor:'var(--danger)'}"> ${fmt(bal)}</div><div class="fund-card-count">${inLbl} minus ${outLbl}</div></div>`;
 }
 
 function renderDashboard() {
-  const sum = (fn) => records.filter(fn).reduce((s,r) => s + +r.amount, 0);
-  const cnt = (fn) => records.filter(fn).length;
-
-  const masjidIn  = sum(r => r.category === 'Collection');
-  const masjidOut = sum(r => r.category === 'Expenditure' && r.fund === 'Collection Fund');
-  document.getElementById('masjid-row').innerHTML = fundRow(masjidIn, cnt(r=>r.category==='Collection'), masjidOut, cnt(r=>r.category==='Expenditure'&&r.fund==='Collection Fund'), masjidIn-masjidOut, 'Collection','Expenditure','','out-accent','bal-accent','#1a6b35','#1a6b35');
-
-  const sadqaIn  = sum(r => r.category === 'Sadqa');
-  const sadqaOut = sum(r => r.category === 'Expenditure' && r.fund === 'Sadqa Fund');
-  document.getElementById('sadqa-row').innerHTML = fundRow(sadqaIn, cnt(r=>r.category==='Sadqa'), sadqaOut, cnt(r=>r.category==='Expenditure'&&r.fund==='Sadqa Fund'), sadqaIn-sadqaOut, 'Sadqa Collected','Paid Out','gold-accent','out-accent','gold-bal','#7a5c10','#7a5c10');
-
-  const zakatIn  = sum(r => r.category === 'Zakat');
-  const zakatOut = sum(r => r.category === 'Expenditure' && r.fund === 'Zakat Fund');
-  document.getElementById('zakat-row').innerHTML = fundRow(zakatIn, cnt(r=>r.category==='Zakat'), zakatOut, cnt(r=>r.category==='Expenditure'&&r.fund==='Zakat Fund'), zakatIn-zakatOut, 'Zakat Collected','Paid Out','blue-accent','blue-out','blue-bal','#1a4a9b','#1a4a9b');
-
-  const tazIn  = sum(r => r.category==='Taziyat Committee' && r.subcat==='Collection');
-  const tazOut = sum(r => r.category==='Taziyat Committee' && r.subcat==='Expenditure');
-  document.getElementById('taziyat-row').innerHTML = fundRow(tazIn, cnt(r=>r.category==='Taziyat Committee'&&r.subcat==='Collection'), tazOut, cnt(r=>r.category==='Taziyat Committee'&&r.subcat==='Expenditure'), tazIn-tazOut, 'Collection','Expenditure','purple-accent','purple-out','purple-bal','#4a2d80','#4a2d80');
-
+  const s = fn => records.filter(fn).reduce((a,r)=>a+(+r.amount),0);
+  const c = fn => records.filter(fn).length;
+  document.getElementById('masjid-row').innerHTML = fundRow(s(r=>r.category==='Collection'),c(r=>r.category==='Collection'),s(r=>r.category==='Expenditure'&&r.fund==='Collection Fund'),c(r=>r.category==='Expenditure'&&r.fund==='Collection Fund'),s(r=>r.category==='Collection')-s(r=>r.category==='Expenditure'&&r.fund==='Collection Fund'),'Collection','Expenditure','','out-accent','bal-accent','#1a6b35','#1a6b35');
+  document.getElementById('sadqa-row').innerHTML = fundRow(s(r=>r.category==='Sadqa'),c(r=>r.category==='Sadqa'),s(r=>r.category==='Expenditure'&&r.fund==='Sadqa Fund'),c(r=>r.category==='Expenditure'&&r.fund==='Sadqa Fund'),s(r=>r.category==='Sadqa')-s(r=>r.category==='Expenditure'&&r.fund==='Sadqa Fund'),'Sadqa Collected','Paid Out','gold-accent','out-accent','gold-bal','#7a5c10','#7a5c10');
+  document.getElementById('zakat-row').innerHTML = fundRow(s(r=>r.category==='Zakat'),c(r=>r.category==='Zakat'),s(r=>r.category==='Expenditure'&&r.fund==='Zakat Fund'),c(r=>r.category==='Expenditure'&&r.fund==='Zakat Fund'),s(r=>r.category==='Zakat')-s(r=>r.category==='Expenditure'&&r.fund==='Zakat Fund'),'Zakat Collected','Paid Out','blue-accent','blue-out','blue-bal','#1a4a9b','#1a4a9b');
+  document.getElementById('taziyat-row').innerHTML = fundRow(s(r=>r.category==='Taziyat Committee'&&r.subcat==='Collection'),c(r=>r.category==='Taziyat Committee'&&r.subcat==='Collection'),s(r=>r.category==='Taziyat Committee'&&r.subcat==='Expenditure'),c(r=>r.category==='Taziyat Committee'&&r.subcat==='Expenditure'),s(r=>r.category==='Taziyat Committee'&&r.subcat==='Collection')-s(r=>r.category==='Taziyat Committee'&&r.subcat==='Expenditure'),'Collection','Expenditure','purple-accent','purple-out','purple-bal','#4a2d80','#4a2d80');
   document.getElementById('recent-table-wrap').innerHTML = buildTable([...records].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10), false);
 }
 
@@ -375,13 +410,13 @@ function renderDashboard() {
 function populateFilterCat() {
   const sel = document.getElementById('filter-cat');
   const cur = sel.value;
-  sel.innerHTML = '<option value="">All categories</option>' + Object.keys(categories).map(c => `<option value="${c}" ${c===cur?'selected':''}>${c}</option>`).join('');
+  sel.innerHTML = '<option value="">All categories</option>' + Object.keys(categories).map(c=>`<option value="${c}" ${c===cur?'selected':''}>${c}</option>`).join('');
 }
 function populateMonthFilter() {
   const months = [...new Set(records.map(r=>r.date?r.date.slice(0,7):'')).values()].filter(Boolean).sort().reverse();
   const sel = document.getElementById('filter-month');
   const cur = sel.value;
-  sel.innerHTML = '<option value="">All months</option>' + months.map(m => {
+  sel.innerHTML = '<option value="">All months</option>' + months.map(m=>{
     const label = new Date(m+'-01').toLocaleDateString('en-IN',{month:'long',year:'numeric'});
     return `<option value="${m}" ${m===cur?'selected':''}>${label}</option>`;
   }).join('');
@@ -390,19 +425,16 @@ function renderRecords() {
   const q = (document.getElementById('search-input').value||'').toLowerCase();
   const fc = document.getElementById('filter-cat').value;
   const fm = document.getElementById('filter-month').value;
-  let filtered = records.filter(r => {
-    const search = (r.name+(r.subcat||'')+(r.othersText||'')+(r.fund||'')+(r.description||'')+(r.notes||'')).toLowerCase();
-    return (!q||search.includes(q)) && (!fc||r.category===fc) && (!fm||r.date.startsWith(fm));
+  let filtered = records.filter(r=>{
+    const search=(r.name+(r.subcat||'')+(r.othersText||'')+(r.fund||'')+(r.description||'')+(r.notes||'')).toLowerCase();
+    return (!q||search.includes(q))&&(!fc||r.category===fc)&&(!fm||r.date.startsWith(fm));
   }).sort((a,b)=>new Date(b.date)-new Date(a.date));
   document.getElementById('records-table-wrap').innerHTML = buildTable(filtered, true);
 }
 
 function buildTable(rows, showDelete) {
   if (!rows.length) return `<div class="empty-state"><div style="font-size:44px;margin-bottom:10px;">📋</div>No records found.</div>`;
-  const badgeCls = r => {
-    if (r.category==='Taziyat Committee') return 'taziyat';
-    return r.category.toLowerCase().replace(' ','');
-  };
+  const badgeCls = r => r.category==='Taziyat Committee'?'taziyat':r.category.toLowerCase().replace(/ /g,'');
   const amtCls = r => {
     if (r.category==='Expenditure'||(r.category==='Taziyat Committee'&&r.subcat==='Expenditure')) return 'amount-out';
     if (r.category==='Sadqa') return 'amount-sadqa';
@@ -410,11 +442,9 @@ function buildTable(rows, showDelete) {
     if (r.category==='Taziyat Committee') return 'amount-taziyat';
     return 'amount-in';
   };
-  return `<table><thead><tr>
-    <th>Date</th><th>Category</th><th>Sub Category</th><th>Fund/Details</th><th>Name</th><th>Amount</th><th>Method</th><th>Receipt</th><th>Notes</th>${showDelete?'<th></th>':''}
-  </tr></thead><tbody>${rows.map(r=>{
-    const subcatDisplay = r.subcat === 'Others' && r.othersText ? `Others — ${r.othersText}` : (r.subcat||'-');
-    const fundDetail = r.category==='Expenditure' ? `${r.fund||''}${r.description?' — '+r.description:''}` : '-';
+  return `<table><thead><tr><th>Date</th><th>Category</th><th>Sub Category</th><th>Fund/Details</th><th>Name</th><th>Amount</th><th>Method</th><th>Receipt</th><th>Notes</th>${showDelete?'<th></th>':''}</tr></thead><tbody>${rows.map(r=>{
+    const subcatDisplay = r.subcat==='Others'&&r.othersText?`Others — ${r.othersText}`:(r.subcat||'-');
+    const fundDetail = r.category==='Expenditure'?`${r.fund||''}${r.description?' — '+r.description:''}`:'-';
     return `<tr>
       <td style="white-space:nowrap;">${fmtDate(r.date)}</td>
       <td><span class="badge badge-${badgeCls(r)}">${r.category}</span></td>
@@ -436,7 +466,6 @@ function populateCategoryDropdown() {
   const cur = sel.value;
   sel.innerHTML = Object.keys(categories).map(c=>`<option value="${c}" ${c===cur?'selected':''}>${c}</option>`).join('');
 }
-
 function updateSubcategory() {
   const cat = document.getElementById('f-category').value;
   const data = categories[cat];
@@ -444,162 +473,129 @@ function updateSubcategory() {
   const txt = document.getElementById('f-subcat-text');
   const expGroup = document.getElementById('exp-detail-group');
   const subcatGroup = document.getElementById('subcat-group');
-
-  if (cat === 'Expenditure') {
-    subcatGroup.classList.add('hidden');
-    expGroup.classList.remove('hidden');
-  } else {
-    subcatGroup.classList.remove('hidden');
-    expGroup.classList.add('hidden');
-  }
-
-  if (data && data.subcats) {
-    sel.innerHTML = data.subcats.map(o=>`<option value="${o}">${o}</option>`).join('');
-    sel.classList.remove('hidden');
-    txt.classList.add('hidden');
-  } else if (cat !== 'Expenditure') {
-    sel.classList.add('hidden');
-    txt.classList.remove('hidden');
-    txt.value = '';
-  }
-  updateOthersField();
-  updateNameVisibility();
+  if (cat==='Expenditure') { subcatGroup.classList.add('hidden'); expGroup.classList.remove('hidden'); }
+  else { subcatGroup.classList.remove('hidden'); expGroup.classList.add('hidden'); }
+  if (data&&data.subcats) { sel.innerHTML=data.subcats.map(o=>`<option value="${o}">${o}</option>`).join(''); sel.classList.remove('hidden'); txt.classList.add('hidden'); }
+  else if (cat!=='Expenditure') { sel.classList.add('hidden'); txt.classList.remove('hidden'); txt.value=''; }
+  updateOthersField(); updateNameVisibility();
 }
-
 function updateOthersField() {
   const cat = document.getElementById('f-category').value;
   const data = categories[cat];
   const sel = document.getElementById('f-subcat-select');
-  const othersGroup = document.getElementById('others-field-group');
-  if (data && data.subcats && sel.value === 'Others') {
-    othersGroup.classList.remove('hidden');
-  } else {
-    othersGroup.classList.add('hidden');
-    document.getElementById('f-others-text').value = '';
-  }
+  const og = document.getElementById('others-field-group');
+  if (data&&data.subcats&&sel.value==='Others') og.classList.remove('hidden');
+  else { og.classList.add('hidden'); document.getElementById('f-others-text').value=''; }
 }
-
 function updateNameVisibility() {
   const cat = document.getElementById('f-category').value;
   const data = categories[cat];
-  const subcat = data && data.subcats ? document.getElementById('f-subcat-select').value : '';
-  const nameGroup = document.getElementById('name-group');
-  if (cat === 'Collection' && subcat === 'Friday Collection') {
-    nameGroup.classList.add('hidden');
-    document.getElementById('f-name').value = 'Friday Collection';
-  } else {
-    nameGroup.classList.remove('hidden');
-    if (document.getElementById('f-name').value === 'Friday Collection') document.getElementById('f-name').value = '';
-  }
+  const subcat = data&&data.subcats?document.getElementById('f-subcat-select').value:'';
+  const ng = document.getElementById('name-group');
+  if (cat==='Collection'&&subcat==='Friday Collection') { ng.classList.add('hidden'); document.getElementById('f-name').value='Friday Collection'; }
+  else { ng.classList.remove('hidden'); if (document.getElementById('f-name').value==='Friday Collection') document.getElementById('f-name').value=''; }
 }
-
 function updateUploadVisibility() {
-  document.getElementById('upload-group').classList.toggle('hidden', document.getElementById('f-method').value === 'Cash');
+  document.getElementById('upload-group').classList.toggle('hidden', document.getElementById('f-method').value==='Cash');
 }
-
 function handleScreenshot(e) {
-  const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => { screenshotData = ev.target.result; document.getElementById('preview-img').src = screenshotData; document.getElementById('upload-preview').classList.remove('hidden'); };
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{ screenshotData=ev.target.result; document.getElementById('preview-img').src=screenshotData; document.getElementById('upload-preview').classList.remove('hidden'); };
   reader.readAsDataURL(file);
 }
 function clearScreenshot(e) {
-  e.stopPropagation(); screenshotData = null;
-  try { document.getElementById('f-screenshot').value=''; } catch(e){}
+  e.stopPropagation(); screenshotData=null;
+  try{document.getElementById('f-screenshot').value='';}catch(e){}
   document.getElementById('upload-preview').classList.add('hidden');
-  document.getElementById('preview-img').src = '';
+  document.getElementById('preview-img').src='';
 }
 function openLightbox(id) {
-  const rec = records.find(r=>r.id==id); if(!rec||!rec.screenshot) return;
-  document.getElementById('lightbox-img').src = rec.screenshot; document.getElementById('lightbox').classList.add('open');
+  const rec=records.find(r=>r.id==id); if(!rec||!rec.screenshot) return;
+  document.getElementById('lightbox-img').src=rec.screenshot; document.getElementById('lightbox').classList.add('open');
 }
 function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
 
-function addEntry() {
+async function addEntry() {
   const category = document.getElementById('f-category').value;
   const data = categories[category];
   let subcat='', othersText='', fund='', description='';
-
-  if (category === 'Expenditure') {
-    fund = document.getElementById('f-exp-fund').value;
-    description = document.getElementById('f-exp-desc').value.trim();
+  if (category==='Expenditure') {
+    fund=document.getElementById('f-exp-fund').value;
+    description=document.getElementById('f-exp-desc').value.trim();
     if (!description) { showToast('Please enter expenditure description.'); return; }
-  } else if (data && data.subcats) {
-    subcat = document.getElementById('f-subcat-select').value;
-    if (subcat === 'Others') {
-      othersText = document.getElementById('f-others-text').value.trim();
-      if (!othersText) { showToast('Please specify the "Others" details.'); return; }
-    }
+  } else if (data&&data.subcats) {
+    subcat=document.getElementById('f-subcat-select').value;
+    if (subcat==='Others') { othersText=document.getElementById('f-others-text').value.trim(); if(!othersText){showToast('Please specify the "Others" details.');return;} }
   } else {
-    subcat = document.getElementById('f-subcat-text').value.trim();
+    subcat=document.getElementById('f-subcat-text').value.trim();
     if (!subcat) { showToast('Please fill in the sub category.'); return; }
   }
-
-  const date = document.getElementById('f-date').value;
-  const name = document.getElementById('f-name').value.trim();
-  const amount = parseFloat(document.getElementById('f-amount').value);
-  const method = document.getElementById('f-method').value;
-  const notes = document.getElementById('f-notes').value.trim();
-
+  const date=document.getElementById('f-date').value;
+  const name=document.getElementById('f-name').value.trim();
+  const amount=parseFloat(document.getElementById('f-amount').value);
+  const method=document.getElementById('f-method').value;
+  const notes=document.getElementById('f-notes').value.trim();
   if (!date) { showToast('Please select a date.'); return; }
-  const isFriday = category==='Collection' && subcat==='Friday Collection';
-  if (!isFriday && category!=='Expenditure' && !name) { showToast('Please enter a name.'); return; }
+  const isFriday=category==='Collection'&&subcat==='Friday Collection';
+  if (!isFriday&&category!=='Expenditure'&&!name) { showToast('Please enter a name.'); return; }
   if (isNaN(amount)||amount<=0) { showToast('Please enter a valid amount.'); return; }
 
-  records.push({ id:nextId++, date, category, subcat, othersText, fund, description, name: isFriday?'Friday Collection':name, amount, method, notes, screenshot:screenshotData });
+  const rec = { id:nextId++, date, category, subcat, othersText, fund, description, name:isFriday?'Friday Collection':name, amount, method, notes, screenshot:screenshotData };
+  records.push(rec);
   clearForm();
   showToast('Entry added. Alhamdulillah!');
   renderDashboard();
+  await saveToSheet();
 }
 
 function clearForm() {
-  ['f-name','f-amount','f-notes','f-subcat-text','f-exp-desc','f-others-text'].forEach(id=>{ document.getElementById(id).value=''; });
-  document.getElementById('f-method').value = 'Cash';
-  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('f-exp-fund').value = 'Collection Fund';
-  screenshotData = null;
+  ['f-name','f-amount','f-notes','f-subcat-text','f-exp-desc','f-others-text'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('f-method').value='Cash';
+  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('f-exp-fund').value='Collection Fund';
+  screenshotData=null;
   document.getElementById('upload-preview').classList.add('hidden');
   document.getElementById('upload-group').classList.add('hidden');
-  try { document.getElementById('f-screenshot').value=''; } catch(e){}
+  try{document.getElementById('f-screenshot').value='';}catch(e){}
   populateCategoryDropdown();
-  document.getElementById('f-category').value = 'Collection';
+  document.getElementById('f-category').value='Collection';
   updateSubcategory();
 }
 
-function deleteRecord(id) {
+async function deleteRecord(id) {
   if (!confirm('Delete this record? This cannot be undone.')) return;
-  records = records.filter(r=>r.id!==id);
-  renderRecords(); renderDashboard(); showToast('Record deleted.');
+  records=records.filter(r=>r.id!==id);
+  renderRecords(); renderDashboard();
+  showToast('Record deleted.');
+  await saveToSheet();
 }
 
 // ---- SETTINGS ----
 function renderSettings() {
   const body = document.getElementById('settings-body');
-  body.innerHTML = Object.entries(categories).map(([cat, data]) => {
+  body.innerHTML = Object.entries(categories).map(([cat,data])=>{
     const canDeleteCat = !data.locked;
     const subcatHtml = data.subcats ? `
       <div class="subcat-list">
-        ${data.subcats.map((sc,i) => {
-          const isOthers = sc === 'Others';
-          const canDel = !data.locked || !['Friday Collection','Monthly Collection','Earning','Sadqa Fitr','Baitul Maal','Zakat','Collection','Expenditure'].includes(sc);
+        ${data.subcats.map(sc=>{
+          const isOthers=sc==='Others';
+          const locked=['Friday Collection','Monthly Collection','Earning','Sadqa Fitr','Baitul Maal','Zakat','Collection','Expenditure'].includes(sc);
           return `<div class="subcat-item">
             <span class="subcat-item-name">${sc}</span>
-            ${isOthers ? '<span class="locked-badge">always present</span>' : (canDel ? `<button class="btn-red-sm" onclick="removeSubcat('${cat}','${sc}')">Remove</button>` : '<span class="locked-badge">locked</span>')}
+            ${isOthers?'<span class="locked-badge">always present</span>':(locked?'<span class="locked-badge">locked</span>':`<button class="btn-red-sm" onclick="removeSubcat('${cat}','${sc}')">Remove</button>`)}
           </div>`;
         }).join('')}
         <div class="add-row">
           <input type="text" id="new-subcat-${cat.replace(/ /g,'_')}" placeholder="Add new sub category..." />
           <button class="btn-add-sm" onclick="addSubcat('${cat}')">+ Add</button>
         </div>
-      </div>` : `<div style="padding:6px 12px;font-size:12px;color:var(--text-muted);">No sub categories (uses fund + description)</div>`;
-
+      </div>` : `<div style="padding:6px 12px;font-size:12px;color:var(--text-muted);">Uses fund + description</div>`;
     return `<div class="settings-section">
       <div class="cat-item">
         <span class="cat-item-name">${cat}</span>
-        ${canDeleteCat ? `<button class="btn-red-sm" onclick="removeCat('${cat}')">Remove Category</button>` : '<span class="locked-badge">core category</span>'}
-      </div>
-      ${subcatHtml}
-    </div>`;
+        ${canDeleteCat?`<button class="btn-red-sm" onclick="removeCat('${cat}')">Remove</button>`:'<span class="locked-badge">core</span>'}
+      </div>${subcatHtml}</div>`;
   }).join('') + `
     <div class="settings-section">
       <div class="settings-section-title">Add New Category</div>
@@ -610,106 +606,62 @@ function renderSettings() {
     </div>`;
 }
 
-function addCat() {
-  const name = document.getElementById('new-cat-name').value.trim();
-  if (!name) { showToast('Enter a category name.'); return; }
-  if (categories[name]) { showToast('Category already exists.'); return; }
-  categories[name] = { locked: false, subcats: ['Others'] };
-  renderSettings(); populateCategoryDropdown(); showToast(`Category "${name}" added.`);
+async function addCat() {
+  const name=document.getElementById('new-cat-name').value.trim();
+  if (!name){showToast('Enter a category name.');return;}
+  if (categories[name]){showToast('Already exists.');return;}
+  categories[name]={locked:false,subcats:['Others']};
+  renderSettings(); populateCategoryDropdown(); showToast(`"${name}" added.`);
+  await saveToSheet();
 }
-
-function removeCat(cat) {
-  if (records.some(r=>r.category===cat)) { showToast('Cannot remove — records exist for this category.'); return; }
-  if (!confirm(`Remove category "${cat}"?`)) return;
+async function removeCat(cat) {
+  if (records.some(r=>r.category===cat)){showToast('Cannot remove — records exist.');return;}
+  if (!confirm(`Remove "${cat}"?`)) return;
   delete categories[cat];
-  renderSettings(); populateCategoryDropdown(); showToast(`Category "${cat}" removed.`);
+  renderSettings(); populateCategoryDropdown(); showToast(`"${cat}" removed.`);
+  await saveToSheet();
+}
+async function addSubcat(cat) {
+  const key='new-subcat-'+cat.replace(/ /g,'_');
+  const val=document.getElementById(key).value.trim();
+  if (!val){showToast('Enter a sub category name.');return;}
+  if (categories[cat].subcats.includes(val)){showToast('Already exists.');return;}
+  const idx=categories[cat].subcats.indexOf('Others');
+  if (idx>=0) categories[cat].subcats.splice(idx,0,val); else categories[cat].subcats.push(val);
+  renderSettings(); showToast(`"${val}" added.`);
+  await saveToSheet();
+}
+async function removeSubcat(cat,sc) {
+  if (records.some(r=>r.category===cat&&r.subcat===sc)){showToast('Cannot remove — records exist.');return;}
+  if (!confirm(`Remove "${sc}"?`)) return;
+  categories[cat].subcats=categories[cat].subcats.filter(s=>s!==sc);
+  renderSettings(); showToast(`"${sc}" removed.`);
+  await saveToSheet();
 }
 
-function addSubcat(cat) {
-  const key = 'new-subcat-' + cat.replace(/ /g,'_');
-  const val = document.getElementById(key).value.trim();
-  if (!val) { showToast('Enter a sub category name.'); return; }
-  if (categories[cat].subcats.includes(val)) { showToast('Sub category already exists.'); return; }
-  // Insert before Others
-  const idx = categories[cat].subcats.indexOf('Others');
-  if (idx >= 0) categories[cat].subcats.splice(idx, 0, val);
-  else categories[cat].subcats.push(val);
-  renderSettings(); populateCategoryDropdown(); showToast(`Sub category "${val}" added.`);
-}
-
-function removeSubcat(cat, sc) {
-  if (records.some(r=>r.category===cat&&r.subcat===sc)) { showToast('Cannot remove — records exist for this sub category.'); return; }
-  if (!confirm(`Remove sub category "${sc}"?`)) return;
-  categories[cat].subcats = categories[cat].subcats.filter(s=>s!==sc);
-  renderSettings(); showToast(`Sub category "${sc}" removed.`);
-}
-
-// ---- EXPORT / IMPORT ----
+// ---- EXPORT ----
 function exportExcel() {
-  if (!records.length) { showToast('No records to export.'); return; }
-  const wb = XLSX.utils.book_new();
-  const ws_data = [['Date','Category','Sub Category','Others','Fund','Description','Name','Amount (₹)','Payment Method','Notes']];
+  if (!records.length){showToast('No records to export.');return;}
+  const wb=XLSX.utils.book_new();
+  const ws_data=[['Date','Category','Sub Category','Others','Fund','Description','Name','Amount (₹)','Payment Method','Notes']];
   [...records].sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(r=>{
     ws_data.push([r.date,r.category,r.subcat||'',r.othersText||'',r.fund||'',r.description||'',r.name||'',r.amount,r.method,r.notes||'']);
   });
-  const ws = XLSX.utils.aoa_to_sheet(ws_data);
-  ws['!cols'] = [14,18,18,16,16,22,22,14,16,28].map(w=>({wch:w}));
-  XLSX.utils.book_append_sheet(wb, ws, 'All Transactions');
-
-  const sum = fn => records.filter(fn).reduce((s,r)=>s+(+r.amount),0);
-  const ws2 = XLSX.utils.aoa_to_sheet([
-    ['Masjid Khairul Anaam — Summary'],['Generated on', new Date().toLocaleDateString('en-IN')],[],
-    ['MASJID FUND','Amount (₹)'],
-    ['Collection', sum(r=>r.category==='Collection')],
-    ['Expenditure', sum(r=>r.category==='Expenditure'&&r.fund==='Collection Fund')],
-    ['Balance', sum(r=>r.category==='Collection')-sum(r=>r.category==='Expenditure'&&r.fund==='Collection Fund')],[],
-    ['SADQA FUND','Amount (₹)'],
-    ['Sadqa Collected', sum(r=>r.category==='Sadqa')],
-    ['Paid Out', sum(r=>r.category==='Expenditure'&&r.fund==='Sadqa Fund')],
-    ['Balance', sum(r=>r.category==='Sadqa')-sum(r=>r.category==='Expenditure'&&r.fund==='Sadqa Fund')],[],
-    ['ZAKAT FUND','Amount (₹)'],
-    ['Zakat Collected', sum(r=>r.category==='Zakat')],
-    ['Paid Out', sum(r=>r.category==='Expenditure'&&r.fund==='Zakat Fund')],
-    ['Balance', sum(r=>r.category==='Zakat')-sum(r=>r.category==='Expenditure'&&r.fund==='Zakat Fund')],[],
-    ['TAZIYAT COMMITTEE','Amount (₹)'],
-    ['Collection', sum(r=>r.category==='Taziyat Committee'&&r.subcat==='Collection')],
-    ['Expenditure', sum(r=>r.category==='Taziyat Committee'&&r.subcat==='Expenditure')],
-    ['Balance', sum(r=>r.category==='Taziyat Committee'&&r.subcat==='Collection')-sum(r=>r.category==='Taziyat Committee'&&r.subcat==='Expenditure')],
+  const ws=XLSX.utils.aoa_to_sheet(ws_data);
+  ws['!cols']=[14,18,18,16,16,22,22,14,16,28].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,ws,'All Transactions');
+  const s=fn=>records.filter(fn).reduce((a,r)=>a+(+r.amount),0);
+  const ws2=XLSX.utils.aoa_to_sheet([
+    ['Masjid Khairul Anaam — Summary'],['Generated on',new Date().toLocaleDateString('en-IN')],[],
+    ['MASJID FUND','Amount (₹)'],['Collection',s(r=>r.category==='Collection')],['Expenditure',s(r=>r.category==='Expenditure'&&r.fund==='Collection Fund')],['Balance',s(r=>r.category==='Collection')-s(r=>r.category==='Expenditure'&&r.fund==='Collection Fund')],[],
+    ['SADQA FUND','Amount (₹)'],['Sadqa Collected',s(r=>r.category==='Sadqa')],['Paid Out',s(r=>r.category==='Expenditure'&&r.fund==='Sadqa Fund')],['Balance',s(r=>r.category==='Sadqa')-s(r=>r.category==='Expenditure'&&r.fund==='Sadqa Fund')],[],
+    ['ZAKAT FUND','Amount (₹)'],['Zakat Collected',s(r=>r.category==='Zakat')],['Paid Out',s(r=>r.category==='Expenditure'&&r.fund==='Zakat Fund')],['Balance',s(r=>r.category==='Zakat')-s(r=>r.category==='Expenditure'&&r.fund==='Zakat Fund')],[],
+    ['TAZIYAT COMMITTEE','Amount (₹)'],['Collection',s(r=>r.category==='Taziyat Committee'&&r.subcat==='Collection')],['Expenditure',s(r=>r.category==='Taziyat Committee'&&r.subcat==='Expenditure')],['Balance',s(r=>r.category==='Taziyat Committee'&&r.subcat==='Collection')-s(r=>r.category==='Taziyat Committee'&&r.subcat==='Expenditure')],
   ]);
-  ws2['!cols'] = [30,16].map(w=>({wch:w}));
-  XLSX.utils.book_append_sheet(wb, ws2, 'Summary');
-  XLSX.writeFile(wb, 'Masjid_Khairul_Anaam_' + new Date().toISOString().slice(0,10) + '.xlsx');
+  ws2['!cols']=[30,16].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,ws2,'Summary');
+  XLSX.writeFile(wb,'Masjid_Khairul_Anaam_'+new Date().toISOString().slice(0,10)+'.xlsx');
   showToast('Excel exported!');
-}
-
-function importExcel() { document.getElementById('file-input').click(); }
-function handleFileImport(e) {
-  const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    try {
-      const wb = XLSX.read(ev.target.result,{type:'binary'});
-      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
-      let added=0, skipped=0;
-      rows.forEach(row=>{
-        const category=(row['Category']||'').trim();
-        const amount=parseFloat(row['Amount']||row['Amount (₹)']||0);
-        if (amount>0 && Object.keys(categories).includes(category)) {
-          let date=row['Date']||'';
-          if (typeof date==='number') { const d=XLSX.SSF.parse_date_code(date); date=`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`; }
-          records.push({ id:nextId++, date:date||new Date().toISOString().split('T')[0], category, amount,
-            subcat:(row['Sub Category']||'').trim(), othersText:(row['Others']||'').trim(),
-            fund:(row['Fund']||'').trim(), description:(row['Description']||'').trim(),
-            name:(row['Name']||'').trim(), method:(row['Payment Method']||'Cash').trim(),
-            notes:(row['Notes']||'').trim(), screenshot:null });
-          added++;
-        } else skipped++;
-      });
-      renderDashboard(); populateMonthFilter();
-      showToast(`Imported ${added} records.${skipped?' '+skipped+' skipped.':''}`);
-    } catch(err) { showToast('Could not read file.'); }
-  };
-  reader.readAsBinaryString(file); e.target.value='';
 }
 
 function showToast(msg) {
@@ -717,8 +669,9 @@ function showToast(msg) {
   setTimeout(()=>t.classList.remove('show'),3500);
 }
 
+// ---- INIT ----
 clearForm();
-renderDashboard();
+loadFromSheet();
 </script>
 </body>
 </html>
