@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Masjid Khairul Anaam</title>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#1a4a2e" />
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --green-dark: #1a4a2e; --green-mid: #2d7a4f; --green-light: #e8f5ee;
+  --green-border: #a8d5b8; --gold: #c8a84b; --gold-light: #fdf6e3;
+  --text-dark: #1a2e22; --text-muted: #5a7a67; --border: #d4e8db; --danger: #c0392b;
+}
+body { font-family: 'Nunito', sans-serif; background: var(--green-light); color: var(--text-dark); min-height: 100vh; }
+.app-header { background: var(--green-dark); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid var(--gold); position: sticky; top: 0; z-index: 100; }
+.title-block { display: flex; align-items: center; gap: 14px; }
+.mosque-icon { font-size: 30px; }
+.app-title { font-family: 'Amiri', serif; font-size: 24px; color: white; }
+.app-subtitle { font-size: 11px; color: #a8d5b8; letter-spacing: 0.5px; margin-top: 2px; font-style: italic; }
+.header-actions { display: flex; gap: 8px; }
+.btn { font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 8px; cursor: pointer; border: none; transition: all 0.15s; }
+.btn:hover { opacity: 0.88; transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn-gold { background: var(--gold); color: #1a2e22; }
+.btn-outline { background: transparent; border: 1.5px solid #a8d5b8; color: white; }
+.btn-green { background: var(--green-mid); color: white; }
+.btn-danger { background: var(--danger); color: white; font-size: 12px; padding: 5px 10px; border-radius: 6px; }
+.btn-sm { padding: 6px 12px; font-size: 12px; background: #f0f5f2; color: var(--text-muted); border: 1px solid var(--border); }
+.btn-red-sm { padding: 5px 10px; font-size: 11px; background: #fce8e6; color: var(--danger); border: 1px solid #f5c4c0; border-radius: 6px; cursor: pointer; font-family: 'Nunito', sans-serif; font-weight: 700; }
+.btn-add-sm { padding: 5px 10px; font-size: 11px; background: #e1f5e8; color: #1a6b35; border: 1px solid #a8d5b8; border-radius: 6px; cursor: pointer; font-family: 'Nunito', sans-serif; font-weight: 700; }
+.nav-tabs { background: var(--green-dark); display: flex; padding: 0 28px; border-bottom: 1px solid #2d5a3e; overflow-x: auto; }
+.nav-tab { padding: 11px 18px; font-size: 13px; font-weight: 700; color: #a8d5b8; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.15s; white-space: nowrap; user-select: none; }
+.nav-tab:hover { color: white; }
+.nav-tab.active { color: var(--gold); border-bottom: 3px solid var(--gold); }
+.main { padding: 24px 28px; max-width: 1100px; margin: 0 auto; }
+.fund-section { margin-bottom: 22px; }
+.fund-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 10px; padding-left: 2px; }
+.fund-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.fund-card { background: white; border-radius: 12px; padding: 14px 18px; border: 1px solid var(--border); border-top: 4px solid var(--green-mid); box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
+.fund-card.out-accent { border-top-color: var(--danger); }
+.fund-card.bal-accent { border-top-color: #2980b9; }
+.fund-card.gold-accent { border-top-color: var(--gold); }
+.fund-card.gold-bal { border-top-color: #7a5c10; }
+.fund-card.blue-accent { border-top-color: #2471a3; }
+.fund-card.blue-out { border-top-color: #1a5276; }
+.fund-card.blue-bal { border-top-color: #154360; }
+.fund-card.purple-accent { border-top-color: #7c5cbf; }
+.fund-card.purple-out { border-top-color: #a07cd4; }
+.fund-card.purple-bal { border-top-color: #4a2d80; }
+.fund-card-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+.fund-card-amount { font-size: 20px; font-weight: 700; color: var(--text-dark); }
+.fund-card-count { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
+.panel { background: white; border-radius: 14px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 20px; }
+.panel-header { background: var(--green-light); border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.panel-title { font-size: 15px; font-weight: 700; color: var(--green-dark); }
+.search-bar { display: flex; align-items: center; gap: 8px; flex: 1; max-width: 260px; }
+.search-bar input, .filter-select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-family: 'Nunito', sans-serif; font-size: 13px; outline: none; color: var(--text-dark); background: white; transition: border-color 0.15s; }
+.search-bar input { flex: 1; }
+.search-bar input:focus, .filter-select:focus { border-color: var(--green-mid); }
+.filter-select { cursor: pointer; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th { background: #f0f7f3; padding: 11px 14px; text-align: left; font-weight: 700; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+tbody tr { border-bottom: 1px solid #f0f5f2; transition: background 0.1s; }
+tbody tr:hover { background: #f7fbf9; }
+tbody td { padding: 10px 14px; color: var(--text-dark); vertical-align: middle; }
+tbody tr:last-child { border-bottom: none; }
+.badge { display: inline-block; padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.badge-collection { background: #e1f5e8; color: #1a6b35; }
+.badge-sadqa { background: var(--gold-light); color: #7a5c10; }
+.badge-zakat { background: #e8f0fd; color: #1a4a9b; }
+.badge-expenditure { background: #fce8e6; color: #9b2b1f; }
+.badge-taziyat { background: #eae4f5; color: #4a2d80; }
+.amount-in { color: #1a6b35; font-weight: 700; }
+.amount-out { color: var(--danger); font-weight: 700; }
+.amount-sadqa { color: #7a5c10; font-weight: 700; }
+.amount-zakat { color: #1a4a9b; font-weight: 700; }
+.amount-taziyat { color: #4a2d80; font-weight: 700; }
+.form-panel { padding: 22px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-group label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.form-group input, .form-group select, .form-group textarea { padding: 10px 13px; border: 1.5px solid var(--border); border-radius: 9px; font-family: 'Nunito', sans-serif; font-size: 14px; color: var(--text-dark); outline: none; background: white; transition: border-color 0.15s; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--green-mid); }
+.form-actions { display: flex; gap: 10px; margin-top: 20px; }
+.exp-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.upload-zone { border: 2px dashed var(--green-border); border-radius: 10px; padding: 16px; text-align: center; background: var(--green-light); cursor: pointer; transition: all 0.15s; position: relative; }
+.upload-zone:hover { background: #d4edd8; border-color: var(--green-mid); }
+.upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-label { font-size: 13px; color: var(--text-muted); }
+.upload-preview { margin-top: 8px; position: relative; display: inline-block; }
+.upload-preview img { max-height: 90px; border-radius: 8px; border: 1px solid var(--border); }
+.upload-clear { position: absolute; top: -6px; right: -6px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.thumb-img { max-height: 34px; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; vertical-align: middle; }
+.empty-state { text-align: center; padding: 50px; color: var(--text-muted); font-size: 14px; }
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--green-dark); color: white; padding: 13px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; border-left: 4px solid var(--gold); transform: translateY(90px); opacity: 0; transition: transform 0.3s, opacity 0.3s; z-index: 999; max-width: 320px; }
+.toast.show { transform: translateY(0); opacity: 1; }
+.lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.82); z-index: 9999; align-items: center; justify-content: center; }
+.lightbox.open { display: flex; }
+.lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 10px; }
+.lightbox-close { position: absolute; top: 20px; right: 28px; color: white; font-size: 32px; cursor: pointer; }
+.table-wrap { overflow-x: auto; }
+.hidden { display: none; }
+.bismi { text-align: center; font-family: 'Amiri', serif; font-size: 22px; color: var(--green-mid); padding: 10px 0 0; letter-spacing: 1px; }
+.sync-bar { background: #f0f7f3; border-bottom: 1px solid var(--border); padding: 6px 28px; font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #a8d5b8; display: inline-block; }
+.sync-dot.synced { background: var(--green-mid); }
+.sync-dot.syncing { background: var(--gold); animation: pulse 1s infinite; }
+.sync-dot.error { background: var(--danger); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.settings-section { margin-bottom: 24px; }
+.settings-section-title { font-size: 13px; font-weight: 700; color: var(--green-dark); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.cat-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #f7fbf9; border-radius: 8px; margin-bottom: 6px; border: 1px solid var(--border); }
+.cat-item-name { font-size: 13px; font-weight: 600; color: var(--text-dark); }
+.subcat-list { margin-left: 16px; margin-top: 4px; }
+.subcat-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; background: white; border-radius: 6px; margin-bottom: 4px; border: 1px solid var(--border); }
+.subcat-item-name { font-size: 12px; color: var(--text-muted); }
+.add-row { display: flex; gap: 8px; margin-top: 8px; }
+.add-row input { flex: 1; padding: 7px 11px; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Nunito', sans-serif; font-size: 13px; color: var(--text-dark); outline: none; background: white; }
+.add-row input:focus { border-color: var(--green-mid); }
+.locked-badge { font-size: 10px; color: var(--text-muted); background: #f0f5f2; padding: 2px 7px; border-radius: 8px; border: 1px solid var(--border); }
+@media (max-width: 640px) {
+  .app-header { padding: 12px 16px; flex-wrap: wrap; gap: 10px; }
+  .main { padding: 16px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .form-group.full { grid-column: 1; }
+  .exp-detail { grid-template-columns: 1fr; }
+  .fund-row { grid-template-columns: 1fr; }
+  .nav-tab { padding: 10px 12px; font-size: 12px; }
+  thead th, tbody td { padding: 8px 10px; }
+  .sync-bar { padding: 6px 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="title-block">
+    <div class="mosque-icon">🕌</div>
+    <div>
+      <div class="app-title">Masjid Khairul Anaam</div>
+      <div class="app-subtitle">What you give remains with Allah</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-outline" onclick="exportExcel()">📤 Export</button>
+  </div>
+</div>
+
+<div class="sync-bar">
+  <span class="sync-dot" id="sync-dot"></span>
+  <span id="sync-status">Loading data...</span>
+</div>
+
+<div class="nav-tabs">
+  <div class="nav-tab" onclick="switchTab('dashboard')">📊 Dashboard</div>
+  <div class="nav-tab" onclick="switchTab('records')">📋 Records</div>
+  <div class="nav-tab active" onclick="switchTab('add')">➕ Add Entry</div>
+  <div class="nav-tab" onclick="switchTab('settings')">⚙️ Settings</div>
+</div>
+
+<div class="main">
+
+  <!-- DASHBOARD -->
+  <div id="tab-dashboard" class="hidden">
+    <div class="bismi">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
+    <div style="height:20px;"></div>
+    <div class="fund-section"><div class="fund-label">🟢 Masjid Fund</div><div class="fund-row" id="masjid-row"></div></div>
+    <div class="fund-section"><div class="fund-label">🟡 Sadqa Fund</div><div class="fund-row" id="sadqa-row"></div></div>
+    <div class="fund-section"><div class="fund-label">🔵 Zakat Fund</div><div class="fund-row" id="zakat-row"></div></div>
+    <div class="fund-section"><div class="fund-label">🟣 Taziyat Committee</div><div class="fund-row" id="taziyat-row"></div></div>
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Recent Transactions</span></div>
+      <div class="table-wrap" id="recent-table-wrap"></div>
+    </div>
+  </div>
+
+  <!-- RECORDS -->
+  <div id="tab-records" class="hidden">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">All Records</span>
+        <div class="search-bar"><input type="text" id="search-input" placeholder="Search..." oninput="renderRecords()" /></div>
+        <select id="filter-cat" class="filter-select" onchange="renderRecords()"><option value="">All categories</option></select>
+        <select id="filter-month" class="filter-select" onchange="renderRecords()"><option value="">All months</option></select>
+      </div>
+      <div class="table-wrap" id="records-table-wrap"></div>
+    </div>
+  </div>
+
+  <!-- ADD ENTRY -->
+  <div id="tab-add">
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Add New Entry</span></div>
+      <div class="form-panel">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Category</label>
+            <select id="f-category" onchange="updateSubcategory()"></select>
+          </div>
+          <div class="form-group" id="subcat-group">
+            <label>Sub Category</label>
+            <select id="f-subcat-select" onchange="updateOthersField(); updateNameVisibility();"></select>
+            <input type="text" id="f-subcat-text" placeholder="e.g. Electricity, Repairs..." class="hidden" />
+          </div>
+          <div class="form-group full hidden" id="others-field-group">
+            <label>Please specify</label>
+            <input type="text" id="f-others-text" placeholder="Enter details..." />
+          </div>
+          <div class="form-group full hidden" id="exp-detail-group">
+            <label>Expenditure Details</label>
+            <div class="exp-detail">
+              <select id="f-exp-fund">
+                <option value="Collection Fund">Collection Fund</option>
+                <option value="Sadqa Fund">Sadqa Fund</option>
+                <option value="Zakat Fund">Zakat Fund</option>
+              </select>
+              <input type="text" id="f-exp-desc" placeholder="Description e.g. Electricity bill" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="f-date" />
+          </div>
+          <div class="form-group" id="name-group">
+            <label>Name / Payer / Payee</label>
+            <input type="text" id="f-name" placeholder="e.g. Ahmad Rashid" />
+          </div>
+          <div class="form-group">
+            <label>Amount (₹)</label>
+            <input type="number" id="f-amount" placeholder="0" min="0" />
+          </div>
+          <div class="form-group">
+            <label>Payment Method</label>
+            <select id="f-method" onchange="updateUploadVisibility()">
+              <option value="Cash">Cash</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="UPI">UPI</option>
+              <option value="Cheque">Cheque</option>
+            </select>
+          </div>
+          <div class="form-group full hidden" id="upload-group">
+            <label>Screenshot / Photo <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--text-muted)">(optional)</span></label>
+            <div class="upload-zone">
+              <input type="file" id="f-screenshot" accept="image/*" capture="environment" onchange="handleScreenshot(event)" />
+              <div class="upload-label">📷 <strong>Tap to upload</strong> or take a photo</div>
+              <div class="upload-preview hidden" id="upload-preview">
+                <img id="preview-img" src="" alt="preview" />
+                <button class="upload-clear" onclick="clearScreenshot(event)">✕</button>
+              </div>
+            </div>
+          </div>
+          <div class="form-group full">
+            <label>Notes <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--text-muted)">(optional)</span></label>
+            <textarea id="f-notes" rows="2" placeholder="Any additional notes..."></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-green" onclick="addEntry()">✔ Add Entry</button>
+          <button class="btn btn-sm" onclick="clearForm()">Clear</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="tab-settings" class="hidden">
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Manage Categories & Sub Categories</span></div>
+      <div class="form-panel" id="settings-body"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <span class="lightbox-close">✕</span>
+  <img id="lightbox-img" src="" alt="receipt" />
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7i2jg7mWZCPwWE0tgUNROSOhv0mSihKkxjzemFoSxg8CZrH_B2mF43grpZLHnTG8zaA/exec';
+
+let records = [];
+let nextId = 1;
+let screenshotData = null;
+let isSaving = false;
+
+let categories = {
+  'Collection':        { locked: true,  subcats: ['Friday Collection','Monthly Collection','Earning','Others'] },
+  'Sadqa':             { locked: true,  subcats: ['Sadqa Fitr','Baitul Maal','Others'] },
+  'Zakat':             { locked: true,  subcats: ['Zakat','Others'] },
+  'Expenditure':       { locked: true,  subcats: null },
+  'Taziyat Committee': { locked: true,  subcats: ['Collection','Expenditure'] }
+};
+
+// ---- SYNC ----
+function setSyncStatus(state, msg) {
+  const dot = document.getElementById('sync-dot');
+  const txt = document.getElementById('sync-status');
+  dot.className = 'sync-dot ' + state;
+  txt.textContent = msg;
+}
+
+async function loadFromSheet() {
+  setSyncStatus('syncing', 'Loading data...');
+  return new Promise((resolve) => {
+    const callbackName = 'gsCallback_' + Date.now();
+    window[callbackName] = function(data) {
+      try {
+        if (data.records && data.records.length > 1) {
+          const rows = data.records;
+          records = [];
+          for (let i = 1; i < rows.length; i++) {
+            const r = rows[i];
+            if (!r[0]) continue;
+            records.push({
+              id: i,
+              date: r[0]||'', category: r[1]||'', subcat: r[2]||'',
+              othersText: r[3]||'', fund: r[4]||'', description: r[5]||'',
+              name: r[6]||'', amount: parseFloat(r[7])||0,
+              method: r[8]||'Cash', notes: r[9]||'', screenshot: r[10]||null
+            });
+          }
+          nextId = records.length + 1;
+          if (rows[1] && rows[1][11]) {
+            try { categories = JSON.parse(rows[1][11]); } catch(e) {}
+          }
+        }
+        setSyncStatus('synced', 'All data synced · ' + new Date().toLocaleTimeString());
+        renderDashboard();
+        populateCategoryDropdown();
+      } catch(e) {
+        setSyncStatus('error', 'Error loading data');
+      }
+      delete window[callbackName];
+      script.remove();
+      resolve();
+    };
+    const script = document.createElement('script');
+    script.src = SCRIPT_URL + '?callback=' + callbackName + '&t=' + Date.now();
+    script.onerror = () => {
+      setSyncStatus('error', 'Could not load data — check connection');
+      resolve();
+    };
+    document.head.appendChild(script);
+  });
+}
+
+async function saveToSheet() {
+  if (isSaving) return;
+  isSaving = true;
+  setSyncStatus('syncing', 'Saving...');
+  try {
+    const rows = [
+      ['Date','Category','Sub Category','Others','Fund','Description','Name','Amount','Payment Method','Notes','Screenshot','_categories']
+    ];
+    records.forEach((r, i) => {
+      rows.push([
+        r.date, r.category, r.subcat||'', r.othersText||'', r.fund||'',
+        r.description||'', r.name||'', r.amount, r.method, r.notes||'',
+        '', i===0 ? JSON.stringify(categories) : ''
+      ]);
+    });
+    if (records.length === 0) {
+      rows.push(['','','','','','','','','','','', JSON.stringify(categories)]);
+    }
+    const encoded = encodeURIComponent(JSON.stringify(rows));
+    await new Promise((resolve) => {
+      const callbackName = 'gsSave_' + Date.now();
+      window[callbackName] = function(result) {
+        delete window[callbackName];
+        script.remove();
+        resolve(result);
+      };
+      const script = document.createElement('script');
+      script.src = SCRIPT_URL + '?action=save&callback=' + callbackName + '&data=' + encoded;
+      script.onerror = () => { script.remove(); resolve(null); };
+      document.head.appendChild(script);
+    });
+    setSyncStatus('synced', 'Saved · ' + new Date().toLocaleTimeString());
+  } catch(e) {
+    setSyncStatus('error', 'Save failed — check connection');
+  }
+  isSaving = false;
+}
+
+// ---- HELPERS ----
+function fmt(n) { return '₹' + Number(n).toLocaleString('en-IN'); }
+function fmtDate(d) {
+  if (!d) return '';
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function switchTab(tab) {
+  ['dashboard','records','add','settings'].forEach((t,i) => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
+    document.querySelectorAll('.nav-tab')[i].classList.toggle('active', t === tab);
+  });
+  if (tab === 'dashboard') renderDashboard();
+  if (tab === 'records') { populateFilterCat(); populateMonthFilter(); renderRecords(); }
+  if (tab === 'settings') renderSettings();
+}
+
+// ---- DASHBOARD ----
+function fundRow(inAmt, inCnt, outAmt, outCnt, bal, inLbl, outLbl, c1, c2, c3, balColor, inColor) {
+  return `
+    <div class="fund-card ${c1}"><div class="fund-card-label">${inLbl}</div><div class="fund-card-amount" style="color:${inColor}">${fmt(inAmt)}</div><div class="fund-card-count">${inCnt} entries</div></div>
+    <div class="fund-card ${c2}"><div class="fund-card-label">${outLbl}</div><div class="fund-card-amount" style="color:var(--danger)">${fmt(outAmt)}</div><div class="fund-card-count">${outCnt} entries</div></div>
+    <div class="fund-card ${c3}"><div class="fund-card-label">Balance</div><div class="fund-card-amount" style="color:${bal>=0?balColor:'var(--danger)'}"> ${fmt(bal)}</div><div class="fund-card-count">${inLbl} minus ${outLbl}</div></div>`;
+}
+
+function renderDashboard() {
+  const s = fn => records.filter(fn).reduce((a,r)=>a+(+r.amount),0);
+  const c = fn => records.filter(fn).length;
+  document.getElementById('masjid-row').innerHTML = fundRow(s(r=>r.category==='Collection'),c(r=>r.category==='Collection'),s(r=>r.category==='Expenditure'&&r.fund==='Collection Fund'),c(r=>r.category==='Expenditure'&&r.fund==='Collection Fund'),s(r=>r.category==='Collection')-s(r=>r.category==='Expenditure'&&r.fund==='Collection Fund'),'Collection','Expenditure','','out-accent','bal-accent','#1a6b35','#1a6b35');
+  document.getElementById('sadqa-row').innerHTML = fundRow(s(r=>r.category==='Sadqa'),c(r=>r.category==='Sadqa'),s(r=>r.category==='Expenditure'&&r.fund==='Sadqa Fund'),c(r=>r.category==='Expenditure'&&r.fund==='Sadqa Fund'),s(r=>r.category==='Sadqa')-s(r=>r.category==='Expenditure'&&r.fund==='Sadqa Fund'),'Sadqa Collected','Paid Out','gold-accent','out-accent','gold-bal','#7a5c10','#7a5c10');
+  document.getElementById('zakat-row').innerHTML = fundRow(s(r=>r.category==='Zakat'),c(r=>r.category==='Zakat'),s(r=>r.category==='Expenditure'&&r.fund==='Zakat Fund'),c(r=>r.category==='Expenditure'&&r.fund==='Zakat Fund'),s(r=>r.category==='Zakat')-s(r=>r.category==='Expenditure'&&r.fund==='Zakat Fund'),'Zakat Collected','Paid Out','blue-accent','blue-out','blue-bal','#1a4a9b','#1a4a9b');
+  document.getElementById('taziyat-row').innerHTML = fundRow(s(r=>r.category==='Taziyat Committee'&&r.subcat==='Collection'),c(r=>r.category==='Taziyat Committee'&&r.subcat==='Collection'),s(r=>r.category==='Taziyat Committee'&&r.subcat==='Expenditure'),c(r=>r.category==='Taziyat Committee'&&r.subcat==='Expenditure'),s(r=>r.category==='Taziyat Committee'&&r.subcat==='Collection')-s(r=>r.category==='Taziyat Committee'&&r.subcat==='Expenditure'),'Collection','Expenditure','purple-accent','purple-out','purple-bal','#4a2d80','#4a2d80');
+  document.getElementById('recent-table-wrap').innerHTML = buildTable([...records].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10), false);
+}
+
+// ---- RECORDS ----
+function populateFilterCat() {
+  const sel = document.getElementById('filter-cat');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All categories</option>' + Object.keys(categories).map(c=>`<option value="${c}" ${c===cur?'selected':''}>${c}</option>`).join('');
+}
+function populateMonthFilter() {
+  const months = [...new Set(records.map(r=>r.date?r.date.slice(0,7):'')).values()].filter(Boolean).sort().reverse();
+  const sel = document.getElementById('filter-month');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All months</option>' + months.map(m=>{
+    const label = new Date(m+'-01').toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+    return `<option value="${m}" ${m===cur?'selected':''}>${label}</option>`;
+  }).join('');
+}
+function renderRecords() {
+  const q = (document.getElementById('search-input').value||'').toLowerCase();
+  const fc = document.getElementById('filter-cat').value;
+  const fm = document.getElementById('filter-month').value;
+  let filtered = records.filter(r=>{
+    const search=(r.name+(r.subcat||'')+(r.othersText||'')+(r.fund||'')+(r.description||'')+(r.notes||'')).toLowerCase();
+    return (!q||search.includes(q))&&(!fc||r.category===fc)&&(!fm||r.date.startsWith(fm));
+  }).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('records-table-wrap').innerHTML = buildTable(filtered, true);
+}
+
+function buildTable(rows, showDelete) {
+  if (!rows.length) return `<div class="empty-state"><div style="font-size:44px;margin-bottom:10px;">📋</div>No records found.</div>`;
+  const badgeCls = r => r.category==='Taziyat Committee'?'taziyat':r.category.toLowerCase().replace(/ /g,'');
+  const amtCls = r => {
+    if (r.category==='Expenditure'||(r.category==='Taziyat Committee'&&r.subcat==='Expenditure')) return 'amount-out';
+    if (r.category==='Sadqa') return 'amount-sadqa';
+    if (r.category==='Zakat') return 'amount-zakat';
+    if (r.category==='Taziyat Committee') return 'amount-taziyat';
+    return 'amount-in';
+  };
+  return `<table><thead><tr><th>Date</th><th>Category</th><th>Sub Category</th><th>Fund/Details</th><th>Name</th><th>Amount</th><th>Method</th><th>Receipt</th><th>Notes</th>${showDelete?'<th></th>':''}</tr></thead><tbody>${rows.map(r=>{
+    const subcatDisplay = r.subcat==='Others'&&r.othersText?`Others — ${r.othersText}`:(r.subcat||'-');
+    const fundDetail = r.category==='Expenditure'?`${r.fund||''}${r.description?' — '+r.description:''}`:'-';
+    return `<tr>
+      <td style="white-space:nowrap;">${fmtDate(r.date)}</td>
+      <td><span class="badge badge-${badgeCls(r)}">${r.category}</span></td>
+      <td style="color:var(--text-muted);font-size:12px;">${subcatDisplay}</td>
+      <td style="color:var(--text-muted);font-size:12px;">${fundDetail}</td>
+      <td style="font-weight:600;">${r.name||'-'}</td>
+      <td class="${amtCls(r)}">${fmt(r.amount)}</td>
+      <td style="color:var(--text-muted);font-size:12px;">${r.method}</td>
+      <td>${r.screenshot?`<img src="${r.screenshot}" class="thumb-img" onclick="openLightbox(${r.id})" />`:'<span style="color:var(--text-muted);font-size:12px;">-</span>'}</td>
+      <td style="color:var(--text-muted);font-size:12px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.notes||'-'}</td>
+      ${showDelete?`<td><button class="btn btn-danger" onclick="deleteRecord(${r.id})">✕</button></td>`:''}
+    </tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+// ---- FORM ----
+function populateCategoryDropdown() {
+  const sel = document.getElementById('f-category');
+  const cur = sel.value;
+  sel.innerHTML = Object.keys(categories).map(c=>`<option value="${c}" ${c===cur?'selected':''}>${c}</option>`).join('');
+}
+function updateSubcategory() {
+  const cat = document.getElementById('f-category').value;
+  const data = categories[cat];
+  const sel = document.getElementById('f-subcat-select');
+  const txt = document.getElementById('f-subcat-text');
+  const expGroup = document.getElementById('exp-detail-group');
+  const subcatGroup = document.getElementById('subcat-group');
+  if (cat==='Expenditure') { subcatGroup.classList.add('hidden'); expGroup.classList.remove('hidden'); }
+  else { subcatGroup.classList.remove('hidden'); expGroup.classList.add('hidden'); }
+  if (data&&data.subcats) { sel.innerHTML=data.subcats.map(o=>`<option value="${o}">${o}</option>`).join(''); sel.classList.remove('hidden'); txt.classList.add('hidden'); }
+  else if (cat!=='Expenditure') { sel.classList.add('hidden'); txt.classList.remove('hidden'); txt.value=''; }
+  updateOthersField(); updateNameVisibility();
+}
+function updateOthersField() {
+  const cat = document.getElementById('f-category').value;
+  const data = categories[cat];
+  const sel = document.getElementById('f-subcat-select');
+  const og = document.getElementById('others-field-group');
+  if (data&&data.subcats&&sel.value==='Others') og.classList.remove('hidden');
+  else { og.classList.add('hidden'); document.getElementById('f-others-text').value=''; }
+}
+function updateNameVisibility() {
+  const cat = document.getElementById('f-category').value;
+  const data = categories[cat];
+  const subcat = data&&data.subcats?document.getElementById('f-subcat-select').value:'';
+  const ng = document.getElementById('name-group');
+  if (cat==='Collection'&&subcat==='Friday Collection') { ng.classList.add('hidden'); document.getElementById('f-name').value='Friday Collection'; }
+  else { ng.classList.remove('hidden'); if (document.getElementById('f-name').value==='Friday Collection') document.getElementById('f-name').value=''; }
+}
+function updateUploadVisibility() {
+  document.getElementById('upload-group').classList.toggle('hidden', document.getElementById('f-method').value==='Cash');
+}
+function handleScreenshot(e) {
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{ screenshotData=ev.target.result; document.getElementById('preview-img').src=screenshotData; document.getElementById('upload-preview').classList.remove('hidden'); };
+  reader.readAsDataURL(file);
+}
+function clearScreenshot(e) {
+  e.stopPropagation(); screenshotData=null;
+  try{document.getElementById('f-screenshot').value='';}catch(e){}
+  document.getElementById('upload-preview').classList.add('hidden');
+  document.getElementById('preview-img').src='';
+}
+function openLightbox(id) {
+  const rec=records.find(r=>r.id==id); if(!rec||!rec.screenshot) return;
+  document.getElementById('lightbox-img').src=rec.screenshot; document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
+
+async function addEntry() {
+  const category = document.getElementById('f-category').value;
+  const data = categories[category];
+  let subcat='', othersText='', fund='', description='';
+  if (category==='Expenditure') {
+    fund=document.getElementById('f-exp-fund').value;
+    description=document.getElementById('f-exp-desc').value.trim();
+    if (!description) { showToast('Please enter expenditure description.'); return; }
+  } else if (data&&data.subcats) {
+    subcat=document.getElementById('f-subcat-select').value;
+    if (subcat==='Others') { othersText=document.getElementById('f-others-text').value.trim(); if(!othersText){showToast('Please specify the "Others" details.');return;} }
+  } else {
+    subcat=document.getElementById('f-subcat-text').value.trim();
+    if (!subcat) { showToast('Please fill in the sub category.'); return; }
+  }
+  const date=document.getElementById('f-date').value;
+  const name=document.getElementById('f-name').value.trim();
+  const amount=parseFloat(document.getElementById('f-amount').value);
+  const method=document.getElementById('f-method').value;
+  const notes=document.getElementById('f-notes').value.trim();
+  if (!date) { showToast('Please select a date.'); return; }
+  const isFriday=category==='Collection'&&subcat==='Friday Collection';
+  if (!isFriday&&category!=='Expenditure'&&!name) { showToast('Please enter a name.'); return; }
+  if (isNaN(amount)||amount<=0) { showToast('Please enter a valid amount.'); return; }
+
+  const rec = { id:nextId++, date, category, subcat, othersText, fund, description, name:isFriday?'Friday Collection':name, amount, method, notes, screenshot:screenshotData };
+  records.push(rec);
+  clearForm();
+  showToast('Entry added. Alhamdulillah!');
+  renderDashboard();
+  await saveToSheet();
+}
+
+function clearForm() {
+  ['f-name','f-amount','f-notes','f-subcat-text','f-exp-desc','f-others-text'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('f-method').value='Cash';
+  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('f-exp-fund').value='Collection Fund';
+  screenshotData=null;
+  document.getElementById('upload-preview').classList.add('hidden');
+  document.getElementById('upload-group').classList.add('hidden');
+  try{document.getElementById('f-screenshot').value='';}catch(e){}
+  populateCategoryDropdown();
+  document.getElementById('f-category').value='Collection';
+  updateSubcategory();
+}
+
+async function deleteRecord(id) {
+  if (!confirm('Delete this record? This cannot be undone.')) return;
+  records=records.filter(r=>r.id!==id);
+  renderRecords(); renderDashboard();
+  showToast('Record deleted.');
+  await saveToSheet();
+}
+
+// ---- SETTINGS ----
+function renderSettings() {
+  const body = document.getElementById('settings-body');
+  body.innerHTML = Object.entries(categories).map(([cat,data])=>{
+    const canDeleteCat = !data.locked;
+    const subcatHtml = data.subcats ? `
+      <div class="subcat-list">
+        ${data.subcats.map(sc=>{
+          const isOthers=sc==='Others';
+          const locked=['Friday Collection','Monthly Collection','Earning','Sadqa Fitr','Baitul Maal','Zakat','Collection','Expenditure'].includes(sc);
+          return `<div class="subcat-item">
+            <span class="subcat-item-name">${sc}</span>
+            ${isOthers?'<span class="locked-badge">always present</span>':(locked?'<span class="locked-badge">locked</span>':`<button class="btn-red-sm" onclick="removeSubcat('${cat}','${sc}')">Remove</button>`)}
+          </div>`;
+        }).join('')}
+        <div class="add-row">
+          <input type="text" id="new-subcat-${cat.replace(/ /g,'_')}" placeholder="Add new sub category..." />
+          <button class="btn-add-sm" onclick="addSubcat('${cat}')">+ Add</button>
+        </div>
+      </div>` : `<div style="padding:6px 12px;font-size:12px;color:var(--text-muted);">Uses fund + description</div>`;
+    return `<div class="settings-section">
+      <div class="cat-item">
+        <span class="cat-item-name">${cat}</span>
+        ${canDeleteCat?`<button class="btn-red-sm" onclick="removeCat('${cat}')">Remove</button>`:'<span class="locked-badge">core</span>'}
+      </div>${subcatHtml}</div>`;
+  }).join('') + `
+    <div class="settings-section">
+      <div class="settings-section-title">Add New Category</div>
+      <div class="add-row">
+        <input type="text" id="new-cat-name" placeholder="New category name..." />
+        <button class="btn-add-sm" onclick="addCat()">+ Add Category</button>
+      </div>
+    </div>`;
+}
+
+async function addCat() {
+  const name=document.getElementById('new-cat-name').value.trim();
+  if (!name){showToast('Enter a category name.');return;}
+  if (categories[name]){showToast('Already exists.');return;}
+  categories[name]={locked:false,subcats:['Others']};
+  renderSettings(); populateCategoryDropdown(); showToast(`"${name}" added.`);
+  await saveToSheet();
+}
+async function removeCat(cat) {
+  if (records.some(r=>r.category===cat)){showToast('Cannot remove — records exist.');return;}
+  if (!confirm(`Remove "${cat}"?`)) return;
+  delete categories[cat];
+  renderSettings(); populateCategoryDropdown(); showToast(`"${cat}" removed.`);
+  await saveToSheet();
+}
+async function addSubcat(cat) {
+  const key='new-subcat-'+cat.replace(/ /g,'_');
+  const val=document.getElementById(key).value.trim();
+  if (!val){showToast('Enter a sub category name.');return;}
+  if (categories[cat].subcats.includes(val)){showToast('Already exists.');return;}
+  const idx=categories[cat].subcats.indexOf('Others');
+  if (idx>=0) categories[cat].subcats.splice(idx,0,val); else categories[cat].subcats.push(val);
+  renderSettings(); showToast(`"${val}" added.`);
+  await saveToSheet();
+}
+async function removeSubcat(cat,sc) {
+  if (records.some(r=>r.category===cat&&r.subcat===sc)){showToast('Cannot remove — records exist.');return;}
+  if (!confirm(`Remove "${sc}"?`)) return;
+  categories[cat].subcats=categories[cat].subcats.filter(s=>s!==sc);
+  renderSettings(); showToast(`"${sc}" removed.`);
+  await saveToSheet();
+}
+
+// ---- EXPORT ----
+function exportExcel() {
+  if (!records.length){showToast('No records to export.');return;}
+  const wb=XLSX.utils.book_new();
+  const ws_data=[['Date','Category','Sub Category','Others','Fund','Description','Name','Amount (₹)','Payment Method','Notes']];
+  [...records].sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(r=>{
+    ws_data.push([r.date,r.category,r.subcat||'',r.othersText||'',r.fund||'',r.description||'',r.name||'',r.amount,r.method,r.notes||'']);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(ws_data);
+  ws['!cols']=[14,18,18,16,16,22,22,14,16,28].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,ws,'All Transactions');
+  const s=fn=>records.filter(fn).reduce((a,r)=>a+(+r.amount),0);
+  const ws2=XLSX.utils.aoa_to_sheet([
+    ['Masjid Khairul Anaam — Summary'],['Generated on',new Date().toLocaleDateString('en-IN')],[],
+    ['MASJID FUND','Amount (₹)'],['Collection',s(r=>r.category==='Collection')],['Expenditure',s(r=>r.category==='Expenditure'&&r.fund==='Collection Fund')],['Balance',s(r=>r.category==='Collection')-s(r=>r.category==='Expenditure'&&r.fund==='Collection Fund')],[],
+    ['SADQA FUND','Amount (₹)'],['Sadqa Collected',s(r=>r.category==='Sadqa')],['Paid Out',s(r=>r.category==='Expenditure'&&r.fund==='Sadqa Fund')],['Balance',s(r=>r.category==='Sadqa')-s(r=>r.category==='Expenditure'&&r.fund==='Sadqa Fund')],[],
+    ['ZAKAT FUND','Amount (₹)'],['Zakat Collected',s(r=>r.category==='Zakat')],['Paid Out',s(r=>r.category==='Expenditure'&&r.fund==='Zakat Fund')],['Balance',s(r=>r.category==='Zakat')-s(r=>r.category==='Expenditure'&&r.fund==='Zakat Fund')],[],
+    ['TAZIYAT COMMITTEE','Amount (₹)'],['Collection',s(r=>r.category==='Taziyat Committee'&&r.subcat==='Collection')],['Expenditure',s(r=>r.category==='Taziyat Committee'&&r.subcat==='Expenditure')],['Balance',s(r=>r.category==='Taziyat Committee'&&r.subcat==='Collection')-s(r=>r.category==='Taziyat Committee'&&r.subcat==='Expenditure')],
+  ]);
+  ws2['!cols']=[30,16].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,ws2,'Summary');
+  XLSX.writeFile(wb,'Masjid_Khairul_Anaam_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  showToast('Excel exported!');
+}
+
+function showToast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// ---- INIT ----
+clearForm();
+loadFromSheet();
+</script>
+</body>
+</html>
